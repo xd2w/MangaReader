@@ -1,0 +1,10 @@
+[project]
+name = "mangareader"
+version = "0.1.0"
+description = "simple light-weight and portable self-hosted Manga and comic reader"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "Flask",
+    "waitress",
+]

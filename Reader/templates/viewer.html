@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block head %}
+{{ super() }}
+<style>
+    img {
+        display: block;
+        /* flex: 50%; */
+        max-width: 100vw;
+        max-height: 100vh;
+        height: auto;
+        width: 100%;
+
+    }
+
+    .menu {
+        background-color: darkgray;
+    }
+</style>
+<!-- <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const images = document.querySelectorAll("img");
+        images.forEach((img, index) => {
+            img.addEventListener("click", function () {
+                const nextIndex = (index + 1) % images.length;
+                images[nextIndex].scrollIntoView({ behavior: "smooth" });
+            });
+        });
+    });
+</script> -->
+{% endblock %}
+
+{% block content %}
+<div class="menu" , style="width: 100%">
+    <a href='{{url_for("volumes", series=series)}}'>
+        <div style='height: 100px; text-align: center;'>
+            <h1>Back to Volumes</h1>
+        </div>
+    </a>
+</div>
+
+<body id='frame'>
+    {% for img in imgs %}
+    <img src='{{ vol }}/{{ img }}' id='img{{ loop.index0 }}' />
+    {% endfor %}
+
+</body>
+<div class="menu" , style="width: 100%">
+    <a href='{{url_for("volumes", series=series)}}'>
+        <div style='height: 100px; text-align: center;'>
+            <h1>Back to Volumes</h1>
+        </div>
+    </a>
+</div>
+{% endblock %}

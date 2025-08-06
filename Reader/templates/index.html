@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block head %}
+{{ super() }}
+{% endblock %}
+
+{% block content %}
+
+{% for series in collection %}
+<a href='{{url_for("volumes", series=series)}}'>
+    <div style='width: 100%;height: 100px; text-align: center;'>
+        <h1>{{series}}</h1>
+    </div>
+</a>
+{% endfor %}
+
+{% endblock %}
