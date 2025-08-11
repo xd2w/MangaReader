@@ -18,11 +18,34 @@
     </a>
 </div>
 {% for vol in volumes %}
+
+{% if vol.endswith('.txt') %}
+<a href='{{url_for("viewer_txt", series=series, vol=vol[:-4])}}'>
+    <!-- <a href='/reader/txt/{{series}}/contents/{{ vol }}'> -->
+    <div style='width: 100%;height: 100px; text-align: center;'>
+        <h1>{{vol[:-4]}}</h1>
+    </div>
+</a>
+{% elif vol.endswith('.pdf') %}
+<a href='{{url_for("viewer_pdf", series=series, vol=vol[:-4])}}'>
+    <div style='width: 100%;height: 100px; text-align: center;'>
+        <h1>{{vol[:-4]}}</h1>
+    </div>
+</a>
+{% elif vol.endswith('-htmlz_FILES') %}
+<a href='{{url_for("viewer_htmlz", series=series, vol=vol)}}'>
+    <div style='width: 100%;height: 100px; text-align: center;'>
+        <h1>{{vol[:-12]}}</h1>
+    </div>
+</a>
+{% else %}
 <a href='{{url_for("viewer", series=series, vol=vol)}}'>
     <div style='width: 100%;height: 100px; text-align: center;'>
         <h1>{{vol}}</h1>
     </div>
 </a>
+{% endif %}
+
 {% endfor %}
 <div class="menu" , style="width: 100%">
     <a href='{{url_for("index")}}'>

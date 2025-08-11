@@ -4,9 +4,11 @@ A lightweight manga reader using Flask.
 This file must be ran in the directory with folder with volumes.
 
 """
-import os
 
-from flask import Flask, send_file, render_template
+import os
+import glob
+
+from flask import Flask, send_file, render_template, send_from_directory
 
 dir_path = "Books"
 
@@ -30,6 +32,13 @@ def volumes(series):
         if os.path.isdir(os.path.join(dir_path, series, f))
     ]
 
+    text_files = glob.glob(os.path.join(dir_path, series, "*.txt"))
+    if text_files:
+        vol_list.extend([os.path.basename(f) for f in text_files])
+
+    # print(vol_list)
+    # exit()
+
     if not vol_list:
         return "<h1>No volumes found for this series</h>", 404
 
@@ -48,7 +57,51 @@ def viewer(series, vol):
 @app.route("/reader/<series>/<vol>/<path:path>")
 def get_file(series, vol, path):
     try:
-        return send_file(f"{dir_path}/{series}/{vol}/{path}")
+        # return send_file(f"{dir_path}/{series}/{vol}/{path}")
+        return send_from_directory(f"{dir_path}/{series}/{vol}", path)
+    except FileNotFoundError:
+        return "File not found", 404
+
+
+@app.route("/reader/txt/<series>/<vol>")
+def viewer_txt(series, vol):
+    # return render_template(
+    #     "viewer_txt.html", series=series, vol=vol, disp_style="horizontal-scroll"
+    # )
+    with open(f"{dir_path}/{series}/{vol}.txt", "r", encoding="cp932") as file:
+        content = file.read()
+    return render_template(
+        "viewer_txt.html",
+        content=content,
+        series=series,
+        disp_style="horizontal-scroll",
+    )
+
+
+@app.route("/reader/txt/<series>/contents/<vol>.txt")
+def get_txt_file(series, vol):
+    try:
+        # return send_file(f"{dir_path}/{series}/{vol}.txt")
+        return send_from_directory(f"{dir_path}/{series}", f"{vol}.txt")
+    except FileNotFoundError:
+        return "File not found", 404
+
+
+@app.route("/reader/epub/<series>/<vol>")
+def viewer_htmlz(series, vol):
+    return render_template(
+        "viewer_htmlz.html", series=series, vol=vol, disp_style="horizontal-scroll"
+    )
+    return send_from_directory(
+        f"{dir_path}/{series}/{vol}", "index.html", mimetype="text/html"
+    )
+
+
+@app.route("/reader/epub/<series>/<vol>/<path:path>")
+def get_html_files(series, vol, path):
+    try:
+        # return send_file(f"{dir_path}/{series}/{vol}/{path}")
+        return send_from_directory(f"{dir_path}/{series}/{vol}", path)
     except FileNotFoundError:
         return "File not found", 404
 

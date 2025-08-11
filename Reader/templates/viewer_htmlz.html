@@ -1,6 +1,9 @@
 {% extends "base.html" %}
 {% block head %}
 {{ super() }}
+
+<!-- <meta charset="SHIFT_JIS"> -->
+
 <style>
     img {
         display: block;
@@ -14,6 +17,24 @@
 
     .menu {
         background-color: darkgray;
+    }
+
+    #frame {
+        width: 90vw;
+        height: 90vh;
+        /* height: 100%; */
+        border: none;
+        /* writing-mode: vertical-rl; */
+        /* overflow-y: auto; */
+        line-height: 2;
+        margin: 10px;
+    }
+
+    #frame iframe {
+        width: 100%;
+        height: 100%;
+        border: none;
+        line-height: 2;
     }
 </style>
 <!-- <script>
@@ -33,21 +54,19 @@
 <div class="menu" , style="width: 100%">
     <a href='{{url_for("volumes", series=series)}}'>
         <div style='height: 100px; text-align: center;'>
-            <h1>Back to Volumes</h1>
+            <h1 class="{{disp_style}}"> Back to Volumes</h1>
         </div>
     </a>
 </div>
 
 <div id='frame'>
-    {% for img in imgs %}
-    <img src='{{ vol }}/{{ img }}' id='img{{ loop.index0 }}' />
-    {% endfor %}
-
+    <iframe src='{{ vol }}/index.html' style='width: 100%; height: 100%;'></iframe>
 </div>
+
 <div class="menu" , style="width: 100%">
     <a href='{{url_for("volumes", series=series)}}'>
         <div style='height: 100px; text-align: center;'>
-            <h1>Back to Volumes</h1>
+            <h1 class="{{disp_style}}"> Back to Volumes</h1>
         </div>
     </a>
 </div>
