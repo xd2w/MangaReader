@@ -6,7 +6,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
-<!-- <link rel="stylesheet" href="{{ url_for('static', filename='library.css') }}"> -->
+<link rel="stylesheet" href="{{ url_for('static', filename='library.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -20,9 +20,10 @@
     <ul class="shelf">
         {% for series in collection %}
         <li>
-            <a class="cover tone-{{ series|length % 6 }}" href="{{ url_for('volumes', series=series) }}">
-                <span class="cover-mark" aria-hidden="true">{{ (series.split()|map('first')|join)[:3]|upper }}</span>
-                <span class="cover-title">{{ series }}</span>
+            {% set n = series|length %}
+            {% set size = 'xs' if n > 40 else 's' if n > 24 else 'm' if n > 12 else 'l' %}
+            <a class="cover tone-{{ n % 6 }}" href="{{ url_for('volumes', series=series) }}">
+                <span class="cover-mark size-{{ size }}">{{ series }}</span>
             </a>
         </li>
         {% endfor %}

@@ -108,21 +108,23 @@ a:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
 }
 
 .cover-mark {
-  padding: 0.6rem 0.75rem 0;
-  font: 700 3.5rem/1 var(--font-display);
+  padding: 0.7rem 0.75rem;
   color: #15172a;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.6rem; /* fallback if container units are unsupported */
+  line-height: 1;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
 }
 
-.cover-title {
-  padding: 0.5rem 0.75rem 0.65rem;
-  background: #15172a;
-  color: #ecebf6;
-  font: 700 1.2rem/1.15 var(--font-display);
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
+/* The full title is the cover. Longer titles get smaller type. */
+.cover { container-type: inline-size; }
+.cover-mark.size-l  { font-size: 18cqi; }
+.cover-mark.size-m  { font-size: 14cqi; }
+.cover-mark.size-s  { font-size: 11cqi; }
+.cover-mark.size-xs { font-size: 9cqi; }
 
 /* ---------- Volume list ---------- */
 
