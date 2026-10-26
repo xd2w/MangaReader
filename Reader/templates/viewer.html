@@ -1,54 +1,265 @@
 {% extends "base.html" %}
+
 {% block head %}
 {{ super() }}
-<style>
-    img {
-        display: block;
-        /* flex: 50%; */
-        max-width: 100vw;
-        max-height: 100vh;
-        height: auto;
-        width: 100%;
-
-    }
-
-    .menu {
-        background-color: darkgray;
-    }
-</style>
-<!-- <script>
-    document.addEventListener("DOMContentLoaded", function () {
-        const images = document.querySelectorAll("img");
-        images.forEach((img, index) => {
-            img.addEventListener("click", function () {
-                const nextIndex = (index + 1) % images.length;
-                images[nextIndex].scrollIntoView({ behavior: "smooth" });
-            });
-        });
-    });
-</script> -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='library.css') }}">
 {% endblock %}
 
 {% block content %}
-<div class="menu" , style="width: 100%">
-    <a href='{{url_for("volumes", series=series)}}'>
-        <div style='height: 100px; text-align: center;'>
-            <h1>Back to Volumes</h1>
-        </div>
-    </a>
-</div>
+{# Last path segment of vol, used as the page title #}
+{% set title = vol.rstrip('/').split('/')[-1] %}
 
-<div id='frame'>
+<header class="bar reader-bar tone-{{ series|length % 6 }}">
+    <a class="back" href="{{ url_for('volumes', series=series) }}">&larr; Volumes</a>
+    <h1>{{ title }}</h1>
+    <span class="count" id="pos">{{ imgs|length }} pages</span>
+    <button class="back" id="fit" type="button">Fit width</button>
+    <button class="back" id="help-btn" type="button" aria-label="Keyboard shortcuts">?</button>
+</header>
+
+<main class="frame fit-height" id="frame">
     {% for img in imgs %}
-    <img src='{{ vol }}/{{ img }}' id='img{{ loop.index0 }}' />
+    <img src="{{ vol }}/{{ img }}" id="img{{ loop.index0 }}" alt="Page {{ loop.index }}" loading="lazy">
     {% endfor %}
+</main>
 
-</div>
-<div class="menu" , style="width: 100%">
-    <a href='{{url_for("volumes", series=series)}}'>
-        <div style='height: 100px; text-align: center;'>
-            <h1>Back to Volumes</h1>
-        </div>
-    </a>
-</div>
+<footer class="end tone-{{ series|length % 6 }}">
+    <p>End of {{ title }}</p>
+    <a class="back" href="{{ url_for('volumes', series=series) }}">Back to volumes</a>
+</footer>
+
+<div class="toast tone-{{ series|length % 6 }}" id="toast" role="status" aria-live="polite"></div>
+
+<dialog class="help" id="help" aria-labelledby="help-title">
+    <h2 id="help-title">Keyboard shortcuts</h2>
+    <dl>
+        <dt><kbd>&larr;</kbd> <kbd>&rarr;</kbd></dt>
+        <dd>Previous or next page. In right-to-left sideways view they swap.</dd>
+        <dt><kbd>Space</kbd> <kbd>Shift</kbd>+<kbd>Space</kbd></dt>
+        <dd>Next or previous page (sideways view)</dd>
+        <dt><kbd>Home</kbd> <kbd>End</kbd></dt>
+        <dd>First or last page</dd>
+        <dt><kbd>G</kbd></dt>
+        <dd>Go to a page number</dd>
+        <dt><kbd>S</kbd></dt>
+        <dd>Sideways view on or off</dd>
+        <dt><kbd>T</kbd></dt>
+        <dd>Reading direction: left to right or right to left</dd>
+        <dt><kbd>D</kbd></dt>
+        <dd>Two pages at once (sideways view)</dd>
+        <dt><kbd>F</kbd></dt>
+        <dd>Fit height or fit width (vertical view)</dd>
+        <dt><kbd>B</kbd></dt>
+        <dd>Hide or show the toolbar</dd>
+        <dt><kbd>Shift</kbd>+<kbd>F</kbd></dt>
+        <dd>Full screen</dd>
+        <dt><kbd>H</kbd> <kbd>?</kbd></dt>
+        <dd>Open or close this help</dd>
+    </dl>
+    <p>With the mouse, click the left or right side of the screen to turn the page, or use the scroll wheel in sideways view.</p>
+    <form method="dialog"><button class="back" type="submit">Close</button></form>
+</dialog>
+
+<script>
+(function () {
+    var frame = document.getElementById('frame');
+    var imgs = Array.prototype.slice.call(frame.querySelectorAll('img'));
+    var pos = document.getElementById('pos');
+    var fitBtn = document.getElementById('fit');
+    var helpBtn = document.getElementById('help-btn');
+    var help = document.getElementById('help');
+    var toast = document.getElementById('toast');
+    var current = 0;
+    var toastTimer;
+    var wheelLock = 0;
+    var prefs = { fit: null, sideways: false, rtl: false, spread: false };
+
+    function load() {
+        try {
+            var s = JSON.parse(localStorage.getItem('reader-prefs'));
+            if (s) for (var k in prefs) if (k in s) prefs[k] = s[k];
+        } catch (e) {}
+    }
+    function save() {
+        try { localStorage.setItem('reader-prefs', JSON.stringify(prefs)); } catch (e) {}
+    }
+
+    function say(msg) {
+        toast.textContent = msg;
+        toast.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(function () { toast.classList.remove('show'); }, 1800);
+    }
+
+    function paired() { return prefs.sideways && prefs.spread; }
+    function base() { return paired() ? current - (current % 2) : current; }
+
+    // Which logical direction (+1 next, -1 previous) the left and right sides mean
+    function dirs() {
+        var l = prefs.sideways && prefs.rtl ? 1 : -1;
+        return { left: l, right: -l };
+    }
+
+    function updateCounter() {
+        var b = base();
+        pos.textContent = paired() && b + 1 < imgs.length
+            ? (b + 1) + '\u2013' + (b + 2) + ' / ' + imgs.length
+            : (b + 1) + ' / ' + imgs.length;
+    }
+
+    function show(n, instant) {
+        imgs[n].scrollIntoView({
+            behavior: instant ? 'auto' : 'smooth',
+            block: prefs.sideways ? 'nearest' : 'start',
+            inline: prefs.sideways ? 'start' : 'nearest'
+        });
+    }
+
+    function layout() {
+        frame.className = 'frame ' + (prefs.sideways
+            ? 'sideways' + (prefs.spread ? ' spread' : '') + (prefs.rtl ? ' rtl' : '')
+            : 'fit-' + prefs.fit);
+        document.body.classList.toggle('is-sideways', prefs.sideways);
+        fitBtn.textContent = prefs.fit === 'height' ? 'Fit width' : 'Fit height';
+        fitBtn.disabled = prefs.sideways;
+        updateCounter();
+        show(base(), true);
+    }
+
+    function jump(n) {
+        current = Math.max(0, Math.min(imgs.length - 1, n));
+        show(base(), true);
+        updateCounter();
+    }
+
+    function move(dir) {
+        var n = base() + dir * (paired() ? 2 : 1);
+        if (n < 0) { say('First page'); return; }
+        if (n >= imgs.length) { say('Last page'); return; }
+        current = n;
+        show(n);
+        updateCounter();
+    }
+
+    function toggleSideways() {
+        prefs.sideways = !prefs.sideways;
+        save(); layout();
+        say(prefs.sideways ? 'Sideways view' : 'Vertical view');
+    }
+
+    function toggleDirection() {
+        prefs.rtl = !prefs.rtl;
+        save(); layout();
+        say((prefs.rtl ? 'Right to left' : 'Left to right') + (prefs.sideways ? '' : ' (applies in sideways view)'));
+    }
+
+    function toggleSpread() {
+        if (!prefs.sideways) { say('Two pages needs sideways view (S)'); return; }
+        prefs.spread = !prefs.spread;
+        save(); layout();
+        say(prefs.spread ? 'Two pages' : 'One page');
+    }
+
+    function toggleFit() {
+        if (prefs.sideways) { say('Fit applies to vertical view (S to switch)'); return; }
+        prefs.fit = prefs.fit === 'height' ? 'width' : 'height';
+        save(); layout();
+        say(prefs.fit === 'height' ? 'Fit height' : 'Fit width');
+    }
+
+    function toggleBar() {
+        var hidden = document.body.classList.toggle('no-bar');
+        show(base(), true);
+        say(hidden ? 'Toolbar hidden (B to show)' : 'Toolbar shown');
+    }
+
+    function toggleFullscreen() {
+        if (document.fullscreenElement) document.exitFullscreen();
+        else if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
+    }
+
+    function goToPage() {
+        var n = parseInt(window.prompt('Go to page (1\u2013' + imgs.length + ')', base() + 1), 10);
+        if (!isNaN(n)) jump(n - 1);
+    }
+
+    // Track the page at the centre of the screen
+    if ('IntersectionObserver' in window) {
+        var io = new IntersectionObserver(function (entries) {
+            entries.forEach(function (e) {
+                if (e.isIntersecting) {
+                    current = imgs.indexOf(e.target);
+                    updateCounter();
+                }
+            });
+        }, { rootMargin: '-45%' });
+        imgs.forEach(function (i) { io.observe(i); });
+    }
+
+    fitBtn.addEventListener('click', toggleFit);
+    helpBtn.addEventListener('click', function () { help.showModal(); });
+
+    document.addEventListener('keydown', function (e) {
+        if (e.ctrlKey || e.metaKey || e.altKey) return;
+        var k = e.key;
+        var lower = k.length === 1 ? k.toLowerCase() : k;
+
+        if (help.open) {
+            if (lower === 'h' || k === '?') help.close();
+            return;
+        }
+        // Let focused buttons and links keep Space and Enter
+        if ((k === ' ' || k === 'Enter') && e.target.closest && e.target.closest('button, a')) return;
+
+        var d = dirs();
+        var side = prefs.sideways;
+        var handled = true;
+
+        if (k === 'ArrowRight') move(d.right);
+        else if (k === 'ArrowLeft') move(d.left);
+        else if (k === 'PageDown' || (side && (k === 'ArrowDown' || (k === ' ' && !e.shiftKey)))) move(1);
+        else if (k === 'PageUp' || (side && (k === 'ArrowUp' || (k === ' ' && e.shiftKey)))) move(-1);
+        else if (k === 'Home') jump(0);
+        else if (k === 'End') jump(imgs.length - 1);
+        else if (lower === 's') toggleSideways();
+        else if (lower === 't') toggleDirection();
+        else if (lower === 'd') toggleSpread();
+        else if (lower === 'f') { if (e.shiftKey) toggleFullscreen(); else toggleFit(); }
+        else if (lower === 'b') toggleBar();
+        else if (lower === 'g') goToPage();
+        else if (lower === 'h' || k === '?') help.showModal();
+        else handled = false;
+
+        if (handled) e.preventDefault();
+    });
+
+    frame.addEventListener('click', function (e) {
+        var d = dirs();
+        if (prefs.sideways) move(e.clientX < window.innerWidth / 2 ? d.left : d.right);
+        else if (prefs.fit === 'height') move(e.clientX < window.innerWidth / 3 ? -1 : 1);
+    });
+
+    // Scroll wheel and trackpad turn pages in sideways view
+    frame.addEventListener('wheel', function (e) {
+        if (!prefs.sideways) return;
+        e.preventDefault();
+        var now = Date.now();
+        if (now - wheelLock < 400) return;
+        var dir;
+        if (Math.abs(e.deltaY) >= Math.abs(e.deltaX)) dir = e.deltaY > 0 ? 1 : -1;
+        else dir = e.deltaX > 0 ? dirs().right : dirs().left;
+        if (!e.deltaX && !e.deltaY) return;
+        wheelLock = now;
+        move(dir);
+    }, { passive: false });
+
+    load();
+    if (!prefs.fit) prefs.fit = window.innerWidth > window.innerHeight ? 'height' : 'width';
+    layout();
+})();
+</script>
 {% endblock %}

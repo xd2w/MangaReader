@@ -10,7 +10,7 @@ import glob
 
 from flask import Flask, send_file, render_template, send_from_directory
 
-dir_path = "Books"
+dir_path = "../Books"
 
 dir_list = sorted(
     [f for f in os.listdir(dir_path) if os.path.isdir(os.path.join(dir_path, f))]
@@ -36,11 +36,11 @@ def volumes(series):
     if text_files:
         vol_list.extend([os.path.basename(f) for f in text_files])
 
-    # print(vol_list)
-    # exit()
-
-    if not vol_list:
-        return "<h1>No volumes found for this series</h>", 404
+    # if not vol_list:
+    #     return (
+    #         render_template("notfound.html"),
+    #         404,
+    #     )
 
     vol_list = sorted(vol_list)
 

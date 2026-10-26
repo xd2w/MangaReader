@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block head %}
+{{ super() }}
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='library.css') }}">
+{% endblock %}
+
+{% block content %}
+<header class="bar tone-{{ series|length % 6 }}">
+    <a class="back" href="{{ url_for('index') }}">&larr; Library</a>
+    <h1>{{ series| default("404") }}</h1>
+    <span class="count">{{ volumes|length }} volume{{ '' if volumes|length == 1 else 's' }}</span>
+</header>
+
+<main class="page tone-{{ series|length % 6 }}">
+    <p class="empty">This series has no volumes yet.</p>
+</main>
+{% endblock %}

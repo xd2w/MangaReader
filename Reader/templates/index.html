@@ -2,16 +2,33 @@
 
 {% block head %}
 {{ super() }}
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<!-- <link rel="stylesheet" href="{{ url_for('static', filename='library.css') }}"> -->
 {% endblock %}
 
 {% block content %}
-
-{% for series in collection %}
-<a href='{{url_for("volumes", series=series)}}'>
-    <div style='width: 100%;height: 100px; text-align: center;'>
-        <h1>{{series}}</h1>
+<main class="page">
+    <div class="page-head">
+        <h1>Library</h1>
+        <span class="count">{{ collection|length }} series</span>
     </div>
-</a>
-{% endfor %}
 
+    {% if collection %}
+    <ul class="shelf">
+        {% for series in collection %}
+        <li>
+            <a class="cover tone-{{ series|length % 6 }}" href="{{ url_for('volumes', series=series) }}">
+                <span class="cover-mark" aria-hidden="true">{{ (series.split()|map('first')|join)[:3]|upper }}</span>
+                <span class="cover-title">{{ series }}</span>
+            </a>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="empty">No series found. Add a folder of comics to your collection directory and refresh.</p>
+    {% endif %}
+</main>
 {% endblock %}

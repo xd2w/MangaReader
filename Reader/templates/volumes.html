@@ -2,56 +2,51 @@
 
 {% block head %}
 {{ super() }}
-<style>
-    .menu {
-        background-color: darkgray;
-    }
-</style>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='library.css') }}">
 {% endblock %}
 
 {% block content %}
-<div class="menu" , style="width: 100%">
-    <a href='{{url_for("index")}}'>
-        <div style='height: 100px; text-align: center;'>
-            <h1>Back to Collections</h1>
-        </div>
-    </a>
-</div>
-{% for vol in volumes %}
+<header class="bar tone-{{ series|length % 6 }}">
+    <a class="back" href="{{ url_for('index') }}">&larr; Library</a>
+    <h1>{{ series }}</h1>
+    <span class="count">{{ volumes|length }} volume{{ '' if volumes|length == 1 else 's' }}</span>
+</header>
 
-{% if vol.endswith('.txt') %}
-<a href='{{url_for("viewer_txt", series=series, vol=vol[:-4])}}'>
-    <!-- <a href='/reader/txt/{{series}}/contents/{{ vol }}'> -->
-    <div style='width: 100%;height: 100px; text-align: center;'>
-        <h1>{{vol[:-4]}}</h1>
-    </div>
-</a>
-{% elif vol.endswith('.pdf') %}
-<a href='{{url_for("viewer_pdf", series=series, vol=vol[:-4])}}'>
-    <div style='width: 100%;height: 100px; text-align: center;'>
-        <h1>{{vol[:-4]}}</h1>
-    </div>
-</a>
-{% elif vol.endswith('-htmlz_FILES') %}
-<a href='{{url_for("viewer_htmlz", series=series, vol=vol)}}'>
-    <div style='width: 100%;height: 100px; text-align: center;'>
-        <h1>{{vol[:-12]}}</h1>
-    </div>
-</a>
-{% else %}
-<a href='{{url_for("viewer", series=series, vol=vol)}}'>
-    <div style='width: 100%;height: 100px; text-align: center;'>
-        <h1>{{vol}}</h1>
-    </div>
-</a>
-{% endif %}
-
-{% endfor %}
-<div class="menu" , style="width: 100%">
-    <a href='{{url_for("index")}}'>
-        <div style='height: 100px; text-align: center;'>
-            <h1>Back to Collections</h1>
-        </div>
-    </a>
-</div>
+<main class="page tone-{{ series|length % 6 }}">
+    {% if volumes %}
+    <ul class="volumes">
+        {% for vol in volumes %}
+        {% if vol.endswith('.txt') %}
+            {% set href = url_for('viewer_txt', series=series, vol=vol[:-4]) %}
+            {% set label = vol[:-4] %}
+            {% set kind = 'Text' %}
+        {% elif vol.endswith('.pdf') %}
+            {% set href = url_for('viewer_pdf', series=series, vol=vol[:-4]) %}
+            {% set label = vol[:-4] %}
+            {% set kind = 'PDF' %}
+        {% elif vol.endswith('-htmlz_FILES') %}
+            {% set href = url_for('viewer_htmlz', series=series, vol=vol) %}
+            {% set label = vol[:-12] %}
+            {% set kind = 'HTML' %}
+        {% else %}
+            {% set href = url_for('viewer', series=series, vol=vol) %}
+            {% set label = vol %}
+            {% set kind = 'Images' %}
+        {% endif %}
+        <li>
+            <a class="volume" href="{{ href }}">
+                <span class="volume-name">{{ label }}</span>
+                <span class="kind">{{ kind }}</span>
+            </a>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="empty">This series has no volumes yet.</p>
+    {% endif %}
+</main>
 {% endblock %}
