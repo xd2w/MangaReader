@@ -373,3 +373,12 @@ kbd {
 @media (prefers-reduced-motion: reduce) {
   .toast { transition: none; }
 }
+
+/* ---------- Auto-hiding header ---------- */
+
+.bar { transition: transform 0.2s ease; }
+.bar.bar-hidden { transform: translateY(-100%); }
+
+@media (prefers-reduced-motion: reduce) {
+  .bar { transition: none; }
+}
