@@ -78,6 +78,47 @@
     var toastTimer;
     var wheelLock = 0;
     var prefs = { fit: null, sideways: false, rtl: false, spread: false };
+    var KEY = {{ (series ~ '/' ~ title)|tojson }};
+    var STORE = 'reader-progress';
+    var ready = false;   // don't save until the saved position has been restored
+    var saveTimer;
+
+    function readProgress() {
+        try { return (JSON.parse(localStorage.getItem(STORE)) || {})[KEY] || null; } catch (e) { return null; }
+    }
+    function saveProgress() {
+        if (!ready) return;
+        try {
+            var all = JSON.parse(localStorage.getItem(STORE)) || {};
+            var b = base();
+            all[KEY] = { p: Math.min(imgs.length - 1, paired() ? b + 1 : b), n: imgs.length, t: Date.now() };
+            localStorage.setItem(STORE, JSON.stringify(all));
+        } catch (e) {}
+    }
+    function scheduleSave() {
+        if (!ready) return;
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(saveProgress, 400);
+    }
+    // Make sure the last position is stored when leaving the page
+    window.addEventListener('pagehide', saveProgress);
+    document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === 'hidden') saveProgress();
+    });
+
+    // In fit-width view, images above the saved page must load before we can scroll to it
+    function afterLoaded(p, done) {
+        if (prefs.sideways || prefs.fit === 'height') { done(); return; }
+        var pending = imgs.slice(0, p + 1).filter(function (i) { return !i.complete; });
+        if (!pending.length) { done(); return; }
+        var left = pending.length;
+        function one() { if (--left === 0) done(); }
+        pending.forEach(function (i) {
+            i.loading = 'eager';
+            i.addEventListener('load', one);
+            i.addEventListener('error', one);
+        });
+    }
 
     function load() {
         try {
@@ -110,6 +151,7 @@
         pos.textContent = paired() && b + 1 < imgs.length
             ? (b + 1) + '\u2013' + (b + 2) + ' / ' + imgs.length
             : (b + 1) + ' / ' + imgs.length;
+        scheduleSave();
     }
 
     function show(n, instant) {
@@ -260,7 +302,16 @@
 
     load();
     if (!prefs.fit) prefs.fit = window.innerWidth > window.innerHeight ? 'height' : 'width';
+    var saved = readProgress();
+    var resumeAt = saved && saved.p > 0 && saved.p < imgs.length ? saved.p : 0;
+    current = resumeAt;
     layout();
+    if (resumeAt > 0) {
+        say('Resumed at page ' + (resumeAt + 1));
+        afterLoaded(resumeAt, function () { jump(resumeAt); ready = true; });
+    } else {
+        ready = true;
+    }
 })();
 </script>
 {% endblock %}

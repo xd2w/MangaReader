@@ -382,3 +382,46 @@ kbd {
 @media (prefers-reduced-motion: reduce) {
   .bar { transition: none; }
 }
+
+/* ---------- Reading progress ---------- */
+
+[hidden] { display: none !important; }
+
+.volume { position: relative; overflow: hidden; }
+
+.volume-meta {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.progress {
+  color: var(--muted);
+  font: 500 0.9rem/1.2 var(--font-body);
+}
+
+.volume.has-progress::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: var(--pct, 0%);
+  height: 3px;
+  background: var(--c);
+}
+
+.volume.is-done .volume-name { opacity: 0.6; }
+
+.continue {
+  display: flex;
+  align-items: center;
+  min-height: 3.25rem;
+  margin-top: 1.25rem;
+  padding: 0.5rem 1rem;
+  background: var(--c);
+  border-radius: 4px;
+  color: #15172a;
+  font: 700 1.25rem/1.2 var(--font-display);
+}
+.continue:hover { filter: brightness(1.08); }

@@ -19,29 +19,38 @@
 
 <main class="page tone-{{ series|length % 6 }}">
     {% if volumes %}
+    <a class="continue" id="continue" hidden></a>
     <ul class="volumes">
         {% for vol in volumes %}
         {% if vol.endswith('.txt') %}
             {% set href = url_for('viewer_txt', series=series, vol=vol[:-4]) %}
             {% set label = vol[:-4] %}
             {% set kind = 'Text' %}
+            {% set key = '' %}
         {% elif vol.endswith('.pdf') %}
             {% set href = url_for('viewer_pdf', series=series, vol=vol[:-4]) %}
             {% set label = vol[:-4] %}
             {% set kind = 'PDF' %}
+            {% set key = '' %}
         {% elif vol.endswith('-htmlz_FILES') %}
             {% set href = url_for('viewer_htmlz', series=series, vol=vol) %}
             {% set label = vol[:-12] %}
             {% set kind = 'HTML' %}
+            {% set key = '' %}
         {% else %}
             {% set href = url_for('viewer', series=series, vol=vol) %}
             {% set label = vol %}
             {% set kind = 'Images' %}
+            {# Same key the image reader saves its progress under #}
+            {% set key = series ~ '/' ~ vol %}
         {% endif %}
         <li>
-            <a class="volume" href="{{ href }}">
+            <a class="volume" href="{{ href }}"{% if key %} data-key="{{ key }}"{% endif %}>
                 <span class="volume-name">{{ label }}</span>
-                <span class="kind">{{ kind }}</span>
+                <span class="volume-meta">
+                    {% if key %}<span class="progress"></span>{% endif %}
+                    <span class="kind">{{ kind }}</span>
+                </span>
             </a>
         </li>
         {% endfor %}
@@ -50,4 +59,32 @@
     <p class="empty">This series has no volumes yet.</p>
     {% endif %}
 </main>
+
+<script>
+// Show saved reading progress (written by the image reader) next to each volume
+(function () {
+    var all;
+    try { all = JSON.parse(localStorage.getItem('reader-progress')) || {}; } catch (e) { all = {}; }
+
+    var best = null;
+    Array.prototype.forEach.call(document.querySelectorAll('.volume[data-key]'), function (a) {
+        var r = all[a.dataset.key];
+        if (!r || !r.n) return;
+        var done = r.p >= r.n - 1;
+        a.querySelector('.progress').textContent = done ? 'Finished' : 'Page ' + (r.p + 1) + ' of ' + r.n;
+        a.style.setProperty('--pct', ((r.p + 1) / r.n * 100) + '%');
+        a.classList.add('has-progress');
+        if (done) a.classList.add('is-done');
+        else if (!best || r.t > best.t) best = { a: a, t: r.t, p: r.p };
+    });
+
+    // "Continue" shortcut to the most recently read unfinished volume
+    if (best) {
+        var c = document.getElementById('continue');
+        c.href = best.a.href;
+        c.textContent = 'Continue: ' + best.a.querySelector('.volume-name').textContent + ' (page ' + (best.p + 1) + ')';
+        c.hidden = false;
+    }
+})();
+</script>
 {% endblock %}
